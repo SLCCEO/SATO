@@ -27,6 +27,14 @@ DISCORD_BOT_TOKEN = os.environ.get('DISCORD_BOT_TOKEN', '')
 DISCORD_GUILD_ID = os.environ.get('DISCORD_GUILD_ID', '')
 JWT_SECRET = os.environ.get('JWT_SECRET', 'change_me')
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '')
+SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
+SUPABASE_SECRET_KEY = os.environ.get('SUPABASE_SECRET_KEY', '')
+
+SUPABASE_CONFIGURED = (
+    bool(SUPABASE_URL)
+    and bool(SUPABASE_SECRET_KEY)
+    and not SUPABASE_SECRET_KEY.startswith('PLACEHOLDER')
+)
 
 MOCK_MODE = (
     not DISCORD_CLIENT_ID
@@ -384,7 +392,6 @@ async def list_judiciary():
 # ============ ROUTES: ARCHIVES ============
 @api_router.get("/archives")
 async def archives():
-    # Static historical entries representing past operations
     return [
         {"id": "ar_001", "year": "2851", "title": "The Sovereign Accord Signing",
          "summary": "Founders ratify the Sovereign Codex aboard the SATOS 'Tideborn'."},
@@ -397,6 +404,116 @@ async def archives():
         {"id": "ar_005", "year": "2854", "title": "Codex 2854 Edition Ratified",
          "summary": "Current authorized protocol takes effect across all SATO territory."},
     ]
+
+
+# ============ ROUTES: DISCORD GUILD ROLE SYNC ============
+async def _discord_get(url: str) -> Optional[dict]:
+    async with httpx.AsyncClient(timeout=15.0) as http:
+        r = await http.get(url, headers={"Authorization": f"Bot {DISCORD_BOT_TOKEN}"})
+        if r.status_code == 200:
+            return r.json()
+        logger.warning(f"Discord API {url} -> {r.status_code} {r.text[:200]}")
+        return None
+
+
+async def fetch_member_role_names(discord_user_id: str) -> tuple[List[str], Optional[str], Optional[str]]:
+    """Return (role_names, member_nick, joined_at)."""
+    if not (DISCORD_BOT_TOKEN and DISCORD_GUILD_ID):
+        return [], None, None
+    member = await _discord_get(
+        f"https://discord.com/api/v10/guilds/{DISCORD_GUILD_ID}/members/{discord_user_id}"
+    )
+    if not member:
+        return [], None, None
+    role_ids = member.get("roles", [])
+    nick = member.get("nick")
+    joined = member.get("joined_at")
+    guild_roles = await _discord_get(
+        f"https://discord.com/api/v10/guilds/{DISCORD_GUILD_ID}/roles"
+    )
+    if not guild_roles:
+        return [], nick, joined
+    id_to_name = {r["id"]: r["name"] for r in guild_roles}
+    role_names = [id_to_name.get(rid, rid) for rid in role_ids if rid in id_to_name]
+    return role_names, nick, joined
+
+
+async def supabase_upsert_profile(profile: dict) -> Optional[dict]:
+    """Upsert into sato_profiles using service-role key."""
+    if not SUPABASE_CONFIGURED:
+        return None
+    url = f"{SUPABASE_URL}/rest/v1/sato_profiles"
+    headers = {
+        "apikey": SUPABASE_SECRET_KEY,
+        "Authorization": f"Bearer {SUPABASE_SECRET_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates,return=representation",
+    }
+    async with httpx.AsyncClient(timeout=15.0) as http:
+        r = await http.post(url, headers=headers, json=profile)
+        if r.status_code in (200, 201):
+            data = r.json()
+            return data[0] if isinstance(data, list) and data else data
+        logger.warning(f"Supabase upsert -> {r.status_code} {r.text[:300]}")
+        return None
+
+
+class SyncRolesPayload(BaseModel):
+    user_id: str          # Supabase auth user.id (uuid)
+    discord_id: str       # Discord snowflake (from user_metadata.provider_id)
+    username: Optional[str] = None
+    global_name: Optional[str] = None
+    avatar: Optional[str] = None
+    email: Optional[str] = None
+
+
+@api_router.post("/discord/sync-roles")
+async def sync_discord_roles(payload: SyncRolesPayload):
+    """Pull a member's roles from the SATO Discord guild and write to Supabase sato_profiles."""
+    if not (DISCORD_BOT_TOKEN and DISCORD_GUILD_ID):
+        raise HTTPException(503, "Discord bot not configured")
+
+    role_names, nick, joined = await fetch_member_role_names(payload.discord_id)
+    rank, clearance = rank_from_roles(role_names)
+
+    profile = {
+        "id": payload.user_id,
+        "discord_id": payload.discord_id,
+        "username": payload.username or "operative",
+        "global_name": nick or payload.global_name,
+        "avatar": payload.avatar,
+        "email": payload.email,
+        "roles": role_names,
+        "sato_rank": rank,
+        "clearance_level": clearance,
+        "last_seen": datetime.now(timezone.utc).isoformat(),
+    }
+
+    saved = await supabase_upsert_profile(profile)
+
+    return {
+        "in_guild": bool(role_names) or nick is not None,
+        "guild_joined_at": joined,
+        "profile": saved or profile,
+    }
+
+
+@api_router.get("/discord/guild-stats")
+async def guild_stats():
+    """Lightweight public guild stats for the home page."""
+    if not (DISCORD_BOT_TOKEN and DISCORD_GUILD_ID):
+        return {"online": 0, "total": 0, "configured": False}
+    g = await _discord_get(
+        f"https://discord.com/api/v10/guilds/{DISCORD_GUILD_ID}?with_counts=true"
+    )
+    if not g:
+        return {"online": 0, "total": 0, "configured": True}
+    return {
+        "name": g.get("name"),
+        "online": g.get("approximate_presence_count", 0),
+        "total": g.get("approximate_member_count", 0),
+        "configured": True,
+    }
 
 
 # ============ INCLUDE ============

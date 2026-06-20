@@ -53,6 +53,32 @@ export const AuthProvider = ({ children }) => {
     const upsertProfile = async (codex) => {
         if (!codex) return;
         try {
+            // 1) Ask backend to pull Discord guild roles via bot token + write to sato_profiles
+            //    Falls back to plain Supabase upsert if backend / bot is unavailable.
+            const { data: { session } } = await supabase.auth.getSession();
+            const discordId = session?.user?.user_metadata?.provider_id
+                || session?.user?.user_metadata?.sub
+                || codex.discord_id;
+            if (discordId) {
+                try {
+                    const res = await api.post("/discord/sync-roles", {
+                        user_id: codex.id,
+                        discord_id: String(discordId),
+                        username: codex.username,
+                        global_name: codex.global_name,
+                        avatar: codex.avatar,
+                        email: codex.email,
+                    });
+                    if (res.data?.profile) {
+                        setUser((prev) => ({ ...prev, ...res.data.profile }));
+                        return;
+                    }
+                } catch (e) {
+                    console.warn("sync-roles failed, falling back to direct upsert:", e?.message);
+                }
+            }
+
+            // 2) Direct fallback (no guild-role enrichment)
             await supabase.from("sato_profiles").upsert({
                 id: codex.id,
                 discord_id: codex.discord_id,
@@ -66,7 +92,6 @@ export const AuthProvider = ({ children }) => {
                 last_seen: codex.last_seen,
             }, { onConflict: "id" });
         } catch (e) {
-            // Table may not be created yet — silent fail; auth still works
             console.warn("sato_profiles upsert skipped:", e.message);
         }
     };

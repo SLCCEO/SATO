@@ -4,6 +4,7 @@ import { ASCII_BANNER, DEPARTMENTS } from "../data/sato";
 import { useAuth } from "../contexts/AuthContext";
 import { ArrowRight, AlertTriangle, Scroll } from "lucide-react";
 import { Link } from "react-router-dom";
+import { api } from "../lib/api";
 
 const TYPING_LINES = [
     "> initiating sovereign codex...",
@@ -45,6 +46,10 @@ const TypedTerminal = () => {
 
 const Home = () => {
     const { user, login } = useAuth();
+    const [stats, setStats] = useState({ online: 0, total: 0, name: "" });
+    useEffect(() => {
+        api.get("/discord/guild-stats").then((r) => setStats(r.data)).catch(() => {});
+    }, []);
     return (
         <div className="space-y-8" data-testid="home-page">
             {/* HERO */}
@@ -98,9 +103,9 @@ const Home = () => {
 
             {/* STATS GRID */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <StatBlock testId="stat-personnel" label="ENLISTED" value="1,247" />
-                <StatBlock testId="stat-active-ops" label="ACTIVE OPS" value="03" accent />
-                <StatBlock testId="stat-fleet" label="CAPITAL HULLS" value="22" />
+                <StatBlock testId="stat-personnel" label="ENLISTED" value={stats.total ? stats.total.toString().padStart(3, "0") : "—"} />
+                <StatBlock testId="stat-online" label="VOID-SIDE NOW" value={stats.online ? stats.online.toString().padStart(2, "0") : "—"} accent />
+                <StatBlock testId="stat-active-ops" label="ACTIVE OPS" value="03" />
                 <StatBlock testId="stat-tax" label="GOV TAX" value="25%" />
             </div>
 
