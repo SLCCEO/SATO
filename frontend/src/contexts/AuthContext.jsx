@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import { supabase, SUPABASE_CONFIGURED, toCodexUser } from "../lib/supabase";
 import axios from 'axios';
 
-// Define the API instance once here
+// 1. Define the API instance once.
 const api = axios.create({
     baseURL: 'http://127.0.0.1:8000/api', 
     withCredentials: true,
@@ -14,9 +14,6 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [mode] = useState(SUPABASE_CONFIGURED ? "supabase" : "mock");
-
-    // ... (rest of your existing AuthProvider code remains exactly the same) ...
-    // The 'api' variable is now available in this scope and correctly configured.
 
     // ---------- SUPABASE PATH ----------
     useEffect(() => {
@@ -158,5 +155,6 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
+// 2. Export useAuth exactly once at the bottom.
 export const useAuth = () => useContext(AuthContext);
 export const useAuth = () => useContext(AuthContext);
