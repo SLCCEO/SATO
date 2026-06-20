@@ -1,3 +1,29 @@
+import { useAuth } from "../contexts/AuthContext";
+import { Navigate } from "react-router-dom";
+
+const Admin = () => {
+    const { user, loading } = useAuth();
+    
+    // Replace with your actual Discord ID
+    const ADMIN_ID = "123456789012345678"; 
+
+    if (loading) return <div>Loading...</div>;
+
+    // Redirect to home if they are not the admin
+    if (!user || user.discord_id !== ADMIN_ID) {
+        return <Navigate to="/" replace />;
+    }
+
+    return (
+        <div>
+            <h1>Admin Dashboard</h1>
+            {/* Your sensitive admin UI goes here */}
+        </div>
+    );
+};
+
+export default Admin;
+
 import { useEffect, useState } from "react";
 import { Panel } from "../components/Panel";
 import { useAuth } from "../contexts/AuthContext";
