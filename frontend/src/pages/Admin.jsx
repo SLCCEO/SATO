@@ -2,15 +2,14 @@ import { useAuth } from "../contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
 const Admin = () => {
-    // Combine them into one single line:
+    // Combine all variables you need from useAuth into ONE line:
     const { user, login, loading } = useAuth(); 
     
-    // Replace with your actual Discord ID
-    const ADMIN_ID = "420447681417183232"; 
+    const ADMIN_ID = "123456789012345678"; // Replace with your actual Discord ID
 
     if (loading) return <div>Loading...</div>;
 
-    // Redirect to home if they are not the admin
+    // Security Gate: Redirect if not admin
     if (!user || user.discord_id !== ADMIN_ID) {
         return <Navigate to="/" replace />;
     }
