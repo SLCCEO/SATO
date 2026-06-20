@@ -6,7 +6,7 @@ const Admin = () => {
     const { user, login, loading } = useAuth(); 
     
     // Replace with your actual Discord ID
-    const ADMIN_ID = "123456789012345678"; 
+    const ADMIN_ID = "420447681417183232"; 
 
     if (loading) return <div>Loading...</div>;
 
