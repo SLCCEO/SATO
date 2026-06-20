@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Panel } from "../components/Panel";
-import { api } from "../lib/api";
+import { dataSource } from "../lib/dataSource";
 import { BookOpen } from "lucide-react";
 
 const Archives = () => {
     const [items, setItems] = useState([]);
-    useEffect(() => { api.get("/archives").then(r => setItems(r.data)).catch(() => {}); }, []);
+    useEffect(() => { dataSource.listArchives().then(d => setItems(d)).catch(() => {}); }, []);
 
     return (
         <div className="space-y-6" data-testid="archives-page">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Panel } from "../components/Panel";
-import { api } from "../lib/api";
+import { dataSource } from "../lib/dataSource";
 import { Gavel } from "lucide-react";
 
 const verdictColor = (v) => ({
@@ -15,7 +15,7 @@ const Judiciary = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        api.get("/judiciary").then(r => { setRecords(r.data); setLoading(false); }).catch(() => setLoading(false));
+        dataSource.listJudiciary().then(d => { setRecords(d); setLoading(false); }).catch(() => setLoading(false));
     }, []);
 
     return (

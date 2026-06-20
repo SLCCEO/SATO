@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Panel } from "../components/Panel";
-import { api } from "../lib/api";
+import { dataSource } from "../lib/dataSource";
 import { useAuth } from "../contexts/AuthContext";
-import { User, Shield } from "lucide-react";
+import { User } from "lucide-react";
 
 const Personnel = () => {
     const [list, setList] = useState([]);
@@ -10,7 +10,7 @@ const Personnel = () => {
     const { user, login } = useAuth();
 
     useEffect(() => {
-        api.get("/personnel").then((r) => { setList(r.data); setLoading(false); }).catch(() => setLoading(false));
+        dataSource.listPersonnel().then((d) => { setList(d); setLoading(false); }).catch(() => setLoading(false));
     }, [user]);
 
     return (

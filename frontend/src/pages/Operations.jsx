@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Panel } from "../components/Panel";
-import { api } from "../lib/api";
+import { dataSource } from "../lib/dataSource";
 import { Radar, AlertOctagon } from "lucide-react";
 
 const statusColor = (s) => ({
@@ -15,7 +15,7 @@ const Operations = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        api.get("/operations").then((r) => { setOps(r.data); setLoading(false); }).catch(() => setLoading(false));
+        dataSource.listOperations().then((d) => { setOps(d); setLoading(false); }).catch(() => setLoading(false));
     }, []);
 
     return (
