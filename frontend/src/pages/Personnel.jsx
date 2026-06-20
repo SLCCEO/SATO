@@ -102,4 +102,3 @@ const Personnel = () => {
 };
 
 export default Personnel;
-export default Personnel;
