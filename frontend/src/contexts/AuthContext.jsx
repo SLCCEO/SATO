@@ -157,4 +157,3 @@ export const AuthProvider = ({ children }) => {
 
 // 2. Export useAuth exactly once at the bottom.
 export const useAuth = () => useContext(AuthContext);
-export const useAuth = () => useContext(AuthContext);
