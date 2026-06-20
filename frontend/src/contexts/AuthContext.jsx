@@ -2,9 +2,11 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import { supabase, SUPABASE_CONFIGURED, toCodexUser } from "../lib/supabase";
 import axios from 'axios';
 
-// 1. Define the API instance once.
+// 1. Fully dynamic API configuration
 const api = axios.create({
-    baseURL: 'http://127.0.0.1:8000/api', 
+    baseURL: window.location.hostname === "satoaccord.com" 
+        ? "https://api.satoaccord.com/api" 
+        : "http://127.0.0.1:8000/api",
     withCredentials: true,
 });
 
@@ -155,5 +157,4 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
-// 2. Export useAuth exactly once at the bottom.
 export const useAuth = () => useContext(AuthContext);
