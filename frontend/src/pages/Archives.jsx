@@ -1,5 +1,3 @@
-Here is the corrected Archives.jsx file. I have added defensive data loading in the useEffect and used the Array.isArray check before mapping to ensure that the component does not crash if the data is not in the expected format.
-
 JavaScript
 import { useEffect, useState } from "react";
 import { Panel } from "../components/Panel";
