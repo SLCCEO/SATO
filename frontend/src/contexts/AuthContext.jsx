@@ -4,9 +4,9 @@ import { supabase, SUPABASE_CONFIGURED, toCodexUser } from "../lib/supabase";
 import axios from 'axios';
 
 export const api = axios.create({
-    // Hardcode the backend URL or use an environment variable
+  
     baseURL: 'http://127.0.0.1:8000/api', 
-    withCredentials: true, // Crucial for session cookies
+    withCredentials: true,
 });
 
 const AuthContext = createContext(null);
