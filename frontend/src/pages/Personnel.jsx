@@ -36,7 +36,7 @@ const Personnel = () => {
                 </div>
             )}
 
-            <Panel label="Active Operatives" code={`ROSTER/${list.length.toString().padStart(3, "0")}`} dataTestId="roster-panel">
+     <Panel label="Active Operatives" code={loading ? "ROSTER/---" : `ROSTER/${(list?.length || 0).toString().padStart(3, "0")}`} dataTestId="roster-panel">
                 {loading ? (
                     <p className="text-red-400 font-terminal">> fetching encrypted roster ...</p>
                 ) : list.length === 0 ? (
