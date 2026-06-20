@@ -26,7 +26,7 @@ BOT_TOKEN     = os.environ["DISCORD_BOT_TOKEN"]
 GUILD_ID      = int(os.environ["DISCORD_GUILD_ID"])
 SUPABASE_URL  = os.environ["SUPABASE_URL"]
 SUPABASE_KEY  = os.environ["SUPABASE_SECRET_KEY"]
-SITE_URL      = os.environ.get("FRONTEND_URL", "https://sovereign-nexus-1.preview.emergentagent.com")
+SITE_URL      = os.environ.get("FRONTEND_URL", "https://satoaccord.com")
 CADET_ROLE    = os.environ.get("SATO_CADET_ROLE", "Cadet")
 WELCOME_CHAN  = os.environ.get("SATO_WELCOME_CHANNEL")  # optional channel name for public welcome
 
