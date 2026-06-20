@@ -1,3 +1,6 @@
+Here is the corrected Archives.jsx file. I have added defensive data loading in the useEffect and used the Array.isArray check before mapping to ensure that the component does not crash if the data is not in the expected format.
+
+JavaScript
 import { useEffect, useState } from "react";
 import { Panel } from "../components/Panel";
 import { dataSource } from "../lib/dataSource";
@@ -5,7 +8,20 @@ import { BookOpen } from "lucide-react";
 
 const Archives = () => {
     const [items, setItems] = useState([]);
-    useEffect(() => { dataSource.listArchives().then(d => setItems(d)).catch(() => {}); }, []);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        dataSource.listArchives()
+            .then((d) => {
+                // Ensure we handle both direct arrays and objects that contain an array
+                setItems(Array.isArray(d) ? d : (d.archives || []));
+                setLoading(false);
+            })
+            .catch(() => {
+                setItems([]);
+                setLoading(false);
+            });
+    }, []);
 
     return (
         <div className="space-y-6" data-testid="archives-page">
@@ -17,7 +33,10 @@ const Archives = () => {
 
             <div className="relative pl-6">
                 <div className="absolute left-0 top-1 bottom-1 w-px bg-red-600/40" />
-                {items.map((it) => (
+                
+                {loading ? (
+                    <p className="text-red-400 font-terminal text-sm">> accessing vault records ...</p>
+                ) : (Array.isArray(items) ? items : []).map((it) => (
                     <div key={it.id} className="relative mb-6" data-testid={`archive-${it.id}`}>
                         <div className="absolute -left-[14px] top-2 w-3 h-3 bg-red-600 rotate-45" />
                         <Panel label={it.title} code={it.year}>
