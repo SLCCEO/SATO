@@ -139,6 +139,18 @@ const HudShell = ({ children }) => {
                         <ChevronRight className="w-3 h-3" /> CLASSIFIED // SOVEREIGN EYES ONLY
                     </div>
                 </div>
+
+                {/* CIG / Star Citizen mandatory fan-site disclaimer */}
+                <div className="max-w-[1600px] mx-auto mt-5 pt-4 border-t border-red-600/15">
+                    <p
+                        data-testid="cig-disclaimer"
+                        className="text-[10px] md:text-[11px] font-mono-tech text-zinc-500 leading-relaxed text-center md:text-left normal-case tracking-normal"
+                    >
+                        <span className="text-red-400 tracking-widest uppercase mr-2">// Notice ::</span>
+                        This is an unofficial Star Citizen fan site, not affiliated with the Cloud Imperium group of companies.
+                        All content on this site not authored by its host or users are property of their respective owners.
+                    </p>
+                </div>
             </footer>
         </div>
     );
