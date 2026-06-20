@@ -1,6 +1,13 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { api } from "../lib/api";
 import { supabase, SUPABASE_CONFIGURED, toCodexUser } from "../lib/supabase";
+import axios from 'axios';
+
+export const api = axios.create({
+    // Hardcode the backend URL or use an environment variable
+    baseURL: 'http://127.0.0.1:8000/api', 
+    withCredentials: true, // Crucial for session cookies
+});
 
 const AuthContext = createContext(null);
 
