@@ -98,8 +98,10 @@ In your Vercel project → **Settings → Domains**:
   ```
 
 ### Discord Developer Portal → your app → OAuth2 → Redirects
-- Keep: `https://ijuxzuzdcuvnhkjrfcwg.supabase.co/auth/v1/callback`
-- (Supabase handles the OAuth — no need to add satoaccord.com here)
+- Keep (do NOT change): `https://ijuxzuzdcuvnhkjrfcwg.supabase.co/auth/v1/callback`
+- This is the ONLY Discord redirect URL needed. The full OAuth flow is:
+  `satoaccord.com → discord.com login → supabase.co/auth/v1/callback → satoaccord.com/auth/callback`
+- `satoaccord.com/auth/callback` is registered with **Supabase** (above), not Discord.
 
 ---
 
