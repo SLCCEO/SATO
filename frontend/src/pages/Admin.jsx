@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Panel } from "../components/Panel";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase, SUPABASE_CONFIGURED } from "../lib/supabase";
-import { Plus, Trash2, Save, Lock } from "lucide-react";
+import { Trash2, Save, Lock, Crown, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { RANK_HIERARCHY } from "../data/ranks";
 
 const TABLES = [
     {
@@ -162,21 +163,23 @@ const AdminTable = ({ table, rows, refresh }) => {
 };
 
 const Admin = () => {
-    const { user } = useAuth();
-    const [active, setActive] = useState(TABLES[0].key);
-    const [data, setData] = useState({ sato_operations: [], sato_judiciary: [], sato_archives: [] });
+    const { user, refresh: refreshAuth } = useAuth();
+    const [active, setActive] = useState("sato_operations");
+    const [data, setData] = useState({ sato_operations: [], sato_judiciary: [], sato_archives: [], sato_profiles: [] });
 
     const refresh = async () => {
         if (!SUPABASE_CONFIGURED) return;
-        const [ops, jud, arc] = await Promise.all([
+        const [ops, jud, arc, prof] = await Promise.all([
             supabase.from("sato_operations").select("*").order("threat_level", { ascending: false }),
             supabase.from("sato_judiciary").select("*").order("created_at", { ascending: false }),
             supabase.from("sato_archives").select("*").order("year", { ascending: true }),
+            supabase.from("sato_profiles").select("*").order("clearance_level", { ascending: false }),
         ]);
         setData({
             sato_operations: ops.data || [],
             sato_judiciary: jud.data || [],
             sato_archives: arc.data || [],
+            sato_profiles: prof.data || [],
         });
     };
 
@@ -210,7 +213,7 @@ const Admin = () => {
             </Panel>
         );
     }
-    if (user.clearance_level < 5) {
+    if (!user.is_owner && user.clearance_level < 5) {
         return (
             <Panel label="Insufficient Clearance" code="DENIED" strong dataTestId="admin-gate-clr">
                 <div className="flex items-start gap-3">
@@ -230,6 +233,7 @@ const Admin = () => {
     }
 
     const activeTable = TABLES.find((t) => t.key === active);
+    const showPersonnel = active === "sato_profiles";
 
     return (
         <div className="space-y-6" data-testid="admin-page">
@@ -237,8 +241,16 @@ const Admin = () => {
                 <p className="text-[10px] tracking-[0.4em] text-red-400 uppercase">09 // Sovereign Console</p>
                 <h1 className="font-rajdhani text-4xl md:text-5xl font-bold uppercase tracking-tight">Admin</h1>
                 <p className="text-zinc-400 mt-2 max-w-2xl">
-                    High Council write-access to Operations, Judiciary records, and Archive entries. All changes are immediate and authoritative under Codex Art 1.1.
+                    {user.is_owner
+                        ? "OWNER access. You can edit any record, override any operative's rank, and grant or revoke Owner status."
+                        : "High Council write-access to Operations, Judiciary records, and Archive entries. All changes are immediate and authoritative under Codex Art 1.1."}
                 </p>
+                {user.is_owner && (
+                    <div className="mt-3 inline-flex items-center gap-2 chamfer-sm border border-red-500 bg-red-950/40 px-3 py-1.5">
+                        <Crown className="w-3.5 h-3.5 text-red-400" />
+                        <span className="font-rajdhani uppercase tracking-widest text-xs text-red-300">SOVEREIGN OWNER · UNLIMITED CLEARANCE</span>
+                    </div>
+                )}
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -254,10 +266,141 @@ const Admin = () => {
                         {t.label}
                     </button>
                 ))}
+                {user.is_owner && (
+                    <button
+                        data-testid="tab-sato_profiles"
+                        onClick={() => setActive("sato_profiles")}
+                        className={`chamfer-sm px-4 py-2 text-xs font-rajdhani font-bold uppercase tracking-[0.25em] border border-red-500 flex items-center gap-2 ${
+                            showPersonnel ? "bg-red-500 text-black" : "text-red-300 hover:bg-red-900/30"
+                        }`}
+                    >
+                        <Crown className="w-3 h-3" /> Personnel
+                    </button>
+                )}
             </div>
 
-            <AdminTable table={activeTable} rows={data[active]} refresh={refresh} />
+            {showPersonnel
+                ? <PersonnelEditor rows={data.sato_profiles} refresh={() => { refresh(); refreshAuth?.(); }} currentUserId={user.id} />
+                : <AdminTable table={activeTable} rows={data[active]} refresh={refresh} />}
         </div>
+    );
+};
+
+// ============ PERSONNEL EDITOR (Owner-only) ============
+const PersonnelEditor = ({ rows, refresh, currentUserId }) => {
+    const RANK_OPTIONS = ["OWNER", ...RANK_HIERARCHY.map((r) => r.label), "RECRUIT"];
+
+    const updateRow = async (id, patch) => {
+        const next = { ...patch };
+        if (patch.sato_rank || patch.clearance_level !== undefined) {
+            next.manual_lock = true; // auto-engage lock when an owner edits manually
+        }
+        const { error } = await supabase.from("sato_profiles").update(next).eq("id", id);
+        if (error) return toast.error(`Update failed: ${error.message}`);
+        toast.success("Operative updated");
+        refresh();
+    };
+
+    const deleteRow = async (id) => {
+        if (id === currentUserId) return toast.error("You cannot delete your own profile.");
+        if (!window.confirm(`Permanently purge operative ${id.slice(0, 8)}…?`)) return;
+        const { error } = await supabase.from("sato_profiles").delete().eq("id", id);
+        if (error) return toast.error(`Delete failed: ${error.message}`);
+        toast.success("Operative purged");
+        refresh();
+    };
+
+    return (
+        <Panel label={`Personnel Registry :: ${rows.length} OPERATIVES`} code="OWNER/MGMT" strong dataTestId="admin-personnel">
+            <p className="text-xs font-mono-tech text-zinc-400 mb-4">
+                Setting rank or clearance auto-engages <span className="text-red-400">manual_lock</span> — Discord role-sync will no longer overwrite this operative.
+                Toggle the lock off to resume auto-sync from Discord.
+            </p>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="text-left text-[10px] font-mono-tech tracking-widest text-zinc-500 uppercase border-b border-red-600/30">
+                            <th className="py-2 pr-3">Operative</th>
+                            <th className="py-2 pr-3">Rank</th>
+                            <th className="py-2 pr-3 w-20">CLR</th>
+                            <th className="py-2 pr-3 w-20 text-center">Lock</th>
+                            <th className="py-2 pr-3 w-20 text-center">Owner</th>
+                            <th className="py-2 pr-3 w-20">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((r) => (
+                            <tr key={r.id} className="border-b border-red-600/10 hover:bg-red-900/10" data-testid={`personnel-row-${r.id.slice(0, 8)}`}>
+                                <td className="py-3 pr-3">
+                                    <div className="flex items-center gap-2">
+                                        {r.avatar
+                                            ? <img src={r.avatar} alt="" className="w-8 h-8 chamfer-sm border border-red-600/40" />
+                                            : <div className="w-8 h-8 chamfer-sm hud-panel-strong flex items-center justify-center"><ShieldCheck className="w-4 h-4 text-red-500" /></div>
+                                        }
+                                        <div>
+                                            <div className="font-rajdhani font-bold text-white">{r.global_name || r.username}</div>
+                                            <div className="text-[10px] font-mono-tech text-zinc-500">@{r.username} · {r.id.slice(0, 8)}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="py-3 pr-3">
+                                    <select
+                                        data-testid={`rank-${r.id.slice(0, 8)}`}
+                                        value={r.sato_rank || "RECRUIT"}
+                                        onChange={(e) => updateRow(r.id, { sato_rank: e.target.value })}
+                                        className="bg-black/60 border border-red-600/40 chamfer-sm px-2 py-1 text-xs text-white font-mono-tech focus:border-red-500 focus:outline-none"
+                                    >
+                                        {RANK_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                                    </select>
+                                </td>
+                                <td className="py-3 pr-3">
+                                    <select
+                                        data-testid={`clr-${r.id.slice(0, 8)}`}
+                                        value={r.clearance_level || 1}
+                                        onChange={(e) => updateRow(r.id, { clearance_level: Number(e.target.value) })}
+                                        className="bg-black/60 border border-red-600/40 chamfer-sm px-2 py-1 text-xs text-white font-mono-tech focus:border-red-500 focus:outline-none w-16"
+                                    >
+                                        {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}/5</option>)}
+                                    </select>
+                                </td>
+                                <td className="py-3 pr-3 text-center">
+                                    <input
+                                        type="checkbox"
+                                        data-testid={`lock-${r.id.slice(0, 8)}`}
+                                        checked={!!r.manual_lock}
+                                        onChange={(e) => updateRow(r.id, { manual_lock: e.target.checked })}
+                                        className="accent-red-600 w-4 h-4 cursor-pointer"
+                                    />
+                                </td>
+                                <td className="py-3 pr-3 text-center">
+                                    <input
+                                        type="checkbox"
+                                        data-testid={`owner-${r.id.slice(0, 8)}`}
+                                        checked={!!r.is_owner}
+                                        onChange={(e) => {
+                                            if (r.id === currentUserId && !e.target.checked) {
+                                                if (!window.confirm("Revoke your OWN Owner status? You'll be locked out of personnel management on next reload.")) return;
+                                            }
+                                            updateRow(r.id, { is_owner: e.target.checked });
+                                        }}
+                                        className="accent-red-500 w-4 h-4 cursor-pointer"
+                                    />
+                                </td>
+                                <td className="py-3 pr-3">
+                                    <button
+                                        data-testid={`purge-${r.id.slice(0, 8)}`}
+                                        onClick={() => deleteRow(r.id)}
+                                        className="text-xs text-red-500 hover:text-red-300 uppercase tracking-widest font-rajdhani flex items-center gap-1"
+                                    >
+                                        <Trash2 className="w-3 h-3" /> purge
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </Panel>
     );
 };
 

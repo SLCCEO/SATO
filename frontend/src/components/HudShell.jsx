@@ -31,7 +31,7 @@ const HudShell = ({ children }) => {
     const clock = useClock();
     const stardate = `2854.${String(clock.getUTCMonth() + 1).padStart(2, "0")}.${String(clock.getUTCDate()).padStart(2, "0")}`;
     const utc = clock.toISOString().substring(11, 19);
-    const nav = (user?.clearance_level >= 5) ? [...NAV, ADMIN_NAV] : NAV;
+    const nav = (user?.is_owner || user?.clearance_level >= 5) ? [...NAV, ADMIN_NAV] : NAV;
 
     return (
         <div className="scanlines min-h-screen text-white">

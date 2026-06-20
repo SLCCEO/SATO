@@ -54,7 +54,6 @@ export const AuthProvider = ({ children }) => {
         if (!codex) return;
         try {
             // 1) Ask backend to pull Discord guild roles via bot token + write to sato_profiles
-            //    Falls back to plain Supabase upsert if backend / bot is unavailable.
             const { data: { session } } = await supabase.auth.getSession();
             const discordId = session?.user?.user_metadata?.provider_id
                 || session?.user?.user_metadata?.sub
@@ -70,7 +69,10 @@ export const AuthProvider = ({ children }) => {
                         email: codex.email,
                     });
                     if (res.data?.profile) {
-                        setUser((prev) => ({ ...prev, ...res.data.profile }));
+                        // 1a) re-read from supabase to pick up is_owner/manual_lock flags
+                        const { data: row } = await supabase.from("sato_profiles").select("*").eq("id", codex.id).maybeSingle();
+                        const merged = { ...codex, ...res.data.profile, ...(row || {}) };
+                        setUser(merged);
                         return;
                     }
                 } catch (e) {
@@ -91,6 +93,10 @@ export const AuthProvider = ({ children }) => {
                 clearance_level: codex.clearance_level,
                 last_seen: codex.last_seen,
             }, { onConflict: "id" });
+
+            // re-read to pick up is_owner/manual_lock
+            const { data: row } = await supabase.from("sato_profiles").select("*").eq("id", codex.id).maybeSingle();
+            if (row) setUser((prev) => ({ ...prev, ...row }));
         } catch (e) {
             console.warn("sato_profiles upsert skipped:", e.message);
         }
@@ -142,7 +148,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, completeCallback, mode }}>
+        <AuthContext.Provider value={{ user, loading, login, logout, completeCallback, mode, refresh: refreshMock }}>
             {children}
         </AuthContext.Provider>
     );

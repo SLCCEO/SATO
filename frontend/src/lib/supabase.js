@@ -40,6 +40,8 @@ export const toCodexUser = (sbUser) => {
         sato_rank: rank,
         clearance_level: clearance,
         branch,
+        is_owner: false,
+        manual_lock: false,
         last_seen: new Date().toISOString(),
     };
 };

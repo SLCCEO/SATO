@@ -496,31 +496,61 @@ class SyncRolesPayload(BaseModel):
 
 @api_router.post("/discord/sync-roles")
 async def sync_discord_roles(payload: SyncRolesPayload):
-    """Pull a member's roles from the SATO Discord guild and write to Supabase sato_profiles."""
+    """Pull a member's roles from the SATO Discord guild and write to Supabase sato_profiles.
+    Respects manual_lock=true (set by an Owner) — locked profiles keep their manual rank/clearance.
+    """
     if not (DISCORD_BOT_TOKEN and DISCORD_GUILD_ID):
         raise HTTPException(503, "Discord bot not configured")
 
     role_names, nick, joined = await fetch_member_role_names(payload.discord_id)
     rank, clearance = rank_from_roles(role_names)
 
+    # Check if profile is manually locked — if so, preserve existing rank/clearance/is_owner
+    existing = None
+    if SUPABASE_CONFIGURED:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as http:
+                r = await http.get(
+                    f"{SUPABASE_URL}/rest/v1/sato_profiles?id=eq.{payload.user_id}&select=*",
+                    headers={"apikey": SUPABASE_SECRET_KEY, "Authorization": f"Bearer {SUPABASE_SECRET_KEY}"},
+                )
+                if r.status_code == 200 and r.json():
+                    existing = r.json()[0]
+        except Exception as e:
+            logger.warning(f"Existing profile lookup failed: {e}")
+
+    locked = bool(existing and existing.get("manual_lock"))
+    is_owner = bool(existing and existing.get("is_owner"))
+
     profile = {
         "id": payload.user_id,
         "discord_id": payload.discord_id,
-        "username": payload.username or "operative",
-        "global_name": nick or payload.global_name,
-        "avatar": payload.avatar,
-        "email": payload.email,
-        "roles": role_names,
-        "sato_rank": rank,
-        "clearance_level": clearance,
+        "username": payload.username or (existing or {}).get("username") or "operative",
+        "global_name": nick or payload.global_name or (existing or {}).get("global_name"),
+        "avatar": payload.avatar or (existing or {}).get("avatar"),
+        "email": payload.email or (existing or {}).get("email"),
+        "roles": role_names,  # always reflect actual Discord roles
         "last_seen": datetime.now(timezone.utc).isoformat(),
     }
+    # Only overwrite rank/clearance if not manually locked
+    if locked:
+        profile["sato_rank"] = existing.get("sato_rank") or rank
+        profile["clearance_level"] = existing.get("clearance_level") or clearance
+    else:
+        profile["sato_rank"] = rank
+        profile["clearance_level"] = clearance
+    # Preserve owner / lock flags always (never overwrite to false from sync)
+    if existing:
+        profile["is_owner"] = is_owner
+        profile["manual_lock"] = locked
 
     saved = await supabase_upsert_profile(profile)
 
     return {
         "in_guild": bool(role_names) or nick is not None,
         "guild_joined_at": joined,
+        "manual_lock": locked,
+        "is_owner": is_owner,
         "profile": saved or profile,
     }
 
