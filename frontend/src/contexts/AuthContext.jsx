@@ -1,10 +1,9 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { api } from "../lib/api";
 import { supabase, SUPABASE_CONFIGURED, toCodexUser } from "../lib/supabase";
 import axios from 'axios';
 
-export const api = axios.create({
-  
+// Define the API instance once here
+const api = axios.create({
     baseURL: 'http://127.0.0.1:8000/api', 
     withCredentials: true,
 });
@@ -15,6 +14,9 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [mode] = useState(SUPABASE_CONFIGURED ? "supabase" : "mock");
+
+    // ... (rest of your existing AuthProvider code remains exactly the same) ...
+    // The 'api' variable is now available in this scope and correctly configured.
 
     // ---------- SUPABASE PATH ----------
     useEffect(() => {
@@ -41,7 +43,7 @@ export const AuthProvider = ({ children }) => {
         return () => { sub?.data?.subscription?.unsubscribe?.(); };
     }, []);
 
-    // ---------- MOCK PATH (no supabase keys yet) ----------
+    // ---------- MOCK PATH ----------
     const refreshMock = useCallback(async () => {
         try {
             const res = await api.get("/auth/me");
@@ -52,6 +54,7 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
         }
     }, []);
+    
     useEffect(() => {
         if (SUPABASE_CONFIGURED) return;
         refreshMock();
@@ -60,7 +63,6 @@ export const AuthProvider = ({ children }) => {
     const upsertProfile = async (codex) => {
         if (!codex) return;
         try {
-            // 1) Ask backend to pull Discord guild roles via bot token + write to sato_profiles
             const { data: { session } } = await supabase.auth.getSession();
             const discordId = session?.user?.user_metadata?.provider_id
                 || session?.user?.user_metadata?.sub
@@ -76,7 +78,6 @@ export const AuthProvider = ({ children }) => {
                         email: codex.email,
                     });
                     if (res.data?.profile) {
-                        // 1a) re-read from supabase to pick up is_owner/manual_lock flags
                         const { data: row } = await supabase.from("sato_profiles").select("*").eq("id", codex.id).maybeSingle();
                         const merged = { ...codex, ...res.data.profile, ...(row || {}) };
                         setUser(merged);
@@ -87,7 +88,6 @@ export const AuthProvider = ({ children }) => {
                 }
             }
 
-            // 2) Direct fallback (no guild-role enrichment)
             await supabase.from("sato_profiles").upsert({
                 id: codex.id,
                 discord_id: codex.discord_id,
@@ -101,7 +101,6 @@ export const AuthProvider = ({ children }) => {
                 last_seen: codex.last_seen,
             }, { onConflict: "id" });
 
-            // re-read to pick up is_owner/manual_lock
             const { data: row } = await supabase.from("sato_profiles").select("*").eq("id", codex.id).maybeSingle();
             if (row) setUser((prev) => ({ ...prev, ...row }));
         } catch (e) {
@@ -120,14 +119,12 @@ export const AuthProvider = ({ children }) => {
             });
             return;
         }
-        // mock fallback
         const res = await api.get("/auth/discord/login");
         window.location.href = res.data.url;
     };
 
     const completeCallback = async ({ code, mock }) => {
         if (SUPABASE_CONFIGURED) {
-            // Supabase handles the code automatically via detectSessionInUrl
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
                 const codex = toCodexUser(session.user);
@@ -161,4 +158,5 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
+export const useAuth = () => useContext(AuthContext);
 export const useAuth = () => useContext(AuthContext);
