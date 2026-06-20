@@ -2,13 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-// In your AuthContext.jsx or wherever the axios call lives:
-const API_URL = "http://127.0.0.1:8000"; // Point to your FastAPI port
-
-const response = await axios.get(`${API_URL}/api/auth/me`, {
-    withCredentials: true // Essential for cookies to be sent
-});
-
 const AuthCallback = () => {
     const [params] = useSearchParams();
     const { completeCallback } = useAuth();
@@ -19,23 +12,34 @@ const AuthCallback = () => {
     useEffect(() => {
         if (ran.current) return;
         ran.current = true;
+
         const code = params.get("code");
         const mock = params.get("mock");
+
+        // Log for debugging (remove in production)
+        console.log("Auth Handshake starting with code:", code);
+
         (async () => {
             try {
+                if (!code && !mock) {
+                    throw new Error("No authorization code provided.");
+                }
+
                 await completeCallback({ code, mock });
-                setMsg("Allegiance accepted. Redirecting to roster...");
-                setTimeout(() => nav("/personnel"), 700);
+                
+                setMsg("Allegiance accepted. Establishing secure link...");
+                setTimeout(() => nav("/personnel"), 1000);
             } catch (e) {
-                setMsg("Authentication failed. Returning to overview...");
-                setTimeout(() => nav("/"), 1500);
+                console.error("Auth Handshake error:", e);
+                setMsg(`Authentication failed: ${e.message || "Unknown error"}. Returning to overview...`);
+                setTimeout(() => nav("/"), 2500);
             }
         })();
     }, [params, completeCallback, nav]);
 
     return (
         <div className="min-h-[60vh] flex flex-col items-center justify-center text-center" data-testid="auth-callback">
-            <div className="font-terminal text-2xl text-red-400 cursor">{msg}</div>
+            <div className="font-terminal text-2xl text-red-400 animate-pulse">{msg}</div>
             <div className="mt-6 text-[10px] font-mono-tech tracking-[0.3em] text-zinc-500 uppercase">
                 Sovereign Codex Handshake // OAuth 2.0
             </div>
