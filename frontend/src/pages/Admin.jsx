@@ -1,8 +1,3 @@
-import { useAuth } from "../contexts/AuthContext";
-import { Navigate } from "react-router-dom";
-
-export default Admin;
-
 import { useEffect, useState } from "react";
 import { Panel } from "../components/Panel";
 import { useAuth } from "../contexts/AuthContext";
