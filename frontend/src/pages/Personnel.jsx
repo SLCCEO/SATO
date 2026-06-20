@@ -10,7 +10,16 @@ const Personnel = () => {
     const { user, login } = useAuth();
 
     useEffect(() => {
-        dataSource.listPersonnel().then((d) => { setList(d); setLoading(false); }).catch(() => setLoading(false));
+        // FIX 1: Ensure we are always setting an array, even if the API returns an object
+        dataSource.listPersonnel()
+            .then((d) => { 
+                setList(Array.isArray(d) ? d : (d.data || [])); 
+                setLoading(false); 
+            })
+            .catch(() => {
+                setList([]);
+                setLoading(false);
+            });
     }, [user]);
 
     return (
@@ -36,7 +45,7 @@ const Personnel = () => {
                 </div>
             )}
 
-     <Panel label="Active Operatives" code={loading ? "ROSTER/---" : `ROSTER/${(list?.length || 0).toString().padStart(3, "0")}`} dataTestId="roster-panel">
+            <Panel label="Active Operatives" code={loading ? "ROSTER/---" : `ROSTER/${(list.length).toString().padStart(3, "0")}`} dataTestId="roster-panel">
                 {loading ? (
                     <p className="text-red-400 font-terminal">> fetching encrypted roster ...</p>
                 ) : list.length === 0 ? (
@@ -57,7 +66,8 @@ const Personnel = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {list.map((p) => (
+                                {/* FIX 2: Added optional chaining as an extra safety measure */}
+                                {list?.map((p) => (
                                     <tr key={p.id} data-testid={`roster-row-${p.id}`} className="border-b border-red-600/10 hover:bg-red-900/10">
                                         <td className="py-3 pr-4">
                                             <div className="chamfer-sm w-8 h-8 hud-panel-strong flex items-center justify-center">
