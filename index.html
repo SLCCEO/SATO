@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SATO | The Sovereign Accord</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;700;900&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-red: #ff3e3e;
+            --tac-red: #ff3e3e;
+            --bg-dark: #020205;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #e0e0e5;
+            font-family: 'Space Grotesk', sans-serif;
+            overflow-x: hidden;
+        }
+
+        #terminal-loader {
+            position: fixed;
+            inset: 0;
+            background: #020205;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            font-family: monospace;
+            transition: opacity 0.8s ease;
+        }
+        .ascii-art { line-height: 1.2; font-size: 10px; margin-bottom: 20px; white-space: pre; }
+
+        h1, h2, h3, h4, .nav-brand {
+            font-family: 'Outfit', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .nav-logo {
+            width: 78px;
+            height: 40px;
+            object-fit: contain;
+            display: block;
+        }
+
+        .bg-grid {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(to right, rgba(255, 62, 62, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 62, 62, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: -1;
+        }
+
+        .status-pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--neon-red);
+            box-shadow: 0 0 10px var(--neon-red);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        .btn-accord {
+            background: white;
+            color: black;
+            font-weight: 900;
+            padding: 1rem 2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            transition: all 0.3s ease;
+            clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .btn-accord:hover {
+            background: var(--neon-red);
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 62, 62, 0.4);
+        }
+
+        .codex-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-left: 4px solid var(--neon-red);
+        }
+
+        .dept-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .dept-card:hover {
+            border-color: var(--neon-red);
+            background: rgba(255, 62, 62, 0.05);
+        }
+
+        #joinModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 500px;
+            background: #0a0a0f;
+            border: 1px solid var(--neon-red);
+            padding: 2.5rem;
+            position: relative;
+            animation: modalIn 0.3s ease-out;
+        }
+
+        .page-view { display: none; }
+        .page-view.active { display: block; }
+
+        @keyframes modalIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(5, 5, 10, 0.9);
+            padding: 3rem 1.5rem;
+            margin-top: 5rem;
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            max-width: 100%;
+            background: #000;
+            border: 1px solid rgba(255, 62, 62, 0.2);
+            box-shadow: 0 0 50px rgba(255, 62, 62, 0.1);
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+        }
+
+        .audio-toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .audio-toggle:hover {
+            border-color: var(--neon-red);
+            background: rgba(255, 62, 62, 0.05);
+        }
+        .audio-toggle.playing {
+            border-color: var(--neon-red);
+        }
+        .equalizer {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 14px;
+        }
+        .eq-bar {
+            width: 2px;
+            background: var(--neon-red);
+            height: 30%;
+        }
+        .playing .eq-bar {
+            animation: eq 0.8s infinite ease-in-out;
+        }
+        .playing .eq-bar:nth-child(2) { animation-delay: 0.2s; }
+        .playing .eq-bar:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes eq {
+            0%, 100% { height: 30%; }
+            50% { height: 100%; }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    
+    <div id="terminal-loader">
+        <pre class="ascii-art text-[8px] md:text-[10px] leading-tight">
+<span class="text-blue-500">=========================================================</span>
+<span class="text-red-500">          [ S O L A R  A S S O C I A T E D ]</span>
+<span class="text-red-500">          [ T R E A T Y  O R G A N I Z A T I O N ]</span>
+<span class="text-blue-500">---------------------------------------------------------</span>
+<span class="text-blue-500">                  .---.</span>
+<span class="text-blue-500">                .'  O  '.</span>
+<span class="text-blue-500">                /  / O \  \</span>
+<span class="text-blue-500">               |   \ O /   |</span>
+<span class="text-blue-500">                \   ' '   /</span>
+<span class="text-blue-500">                 '.     .'</span>
+<span class="text-blue-500">                   '---'</span>
+<span class="text-red-500">             _________________________</span>
+<span class="text-red-500">            /                         \</span>
+<span class="text-red-500">            |    S  A  T  O  P  S      |</span>
+<span class="text-red-500">             \_________________________/</span>
+<span class="text-blue-500">---------------------------------------------------------</span>
+<span class="text-red-500">          STATUS: SOVEREIGN POLITICAL ENTITY</span>
+<span class="text-blue-500">=========================================================</span></pre>
+        <div id="loader-text" class="text-xs text-white font-mono mt-4">SYNCING SOVEREIGN CODEX...</div>
+    </div>
+
+    <div class="bg-grid"></div>
+
+    <audio id="anthem-player" loop>
+        <source src="The Bastion of Nyx Official Anthem of the Solar Associated Treaty Organization.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="joinModal">
+        <div class="modal-content text-center">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white font-bold text-xl">&times;</button>
+            <h2 class="text-3xl font-black text-white italic mb-2">ENLIST IN SATO</h2>
+            <p class="text-xs text-red-500 font-bold uppercase tracking-widest mb-8">Authorization Required</p>
+            <div class="space-y-4">
+                <a href="https://robertsspaceindustries.com/en/orgs/SATO1" target="_blank" class="block p-4 border border-white/10 hover:border-red-500 bg-white/5 hover:bg-red-500/10 transition-all group">
+                    <div class="text-white font-black uppercase tracking-tighter">RSI Organization</div>
+                    <div class="text-[0.6rem] text-gray-500 group-hover:text-red-400 uppercase">Official Enlistment Portal</div>
+                </a>
+                <a href="https://discord.gg/aSeanJvA5t" target="_blank" class="block p-4 border border-white/10 hover:border-purple-500 bg-white/5 hover:bg-purple-500/10 transition-all group">
+                    <div class="text-white font-black uppercase tracking-tighter">Discord Command</div>
+                    <div class="text-[0.6rem] text-gray-500 group-hover:text-purple-400 uppercase">Tactical Communications Center</div>
+                </a>
+            </div>
+            <p class="mt-8 text-[0.5rem] text-gray-600 font-mono uppercase">By enlisting, you agree to the Sovereign Accord Mandate.</p>
+        </div>
+    </div>
+
+    <nav class="fixed top-0 w-full z-[110] border-b border-white/5 bg-[#020205]/95 px-6 h-20 flex justify-between items-center">
+        <div class="flex items-center gap-6">
+            <button class="cursor-pointer" onclick="showPage('main')" aria-label="SATO Home">
+                <img src="./sato-logo.png?v=2" alt="SATO Logo" class="nav-logo">
+            </button>
+            <div class="h-8 w-[1px] bg-white/10 hidden md:block"></div>
+            
+            <div class="hidden md:block">
+                <div class="text-[0.6rem] text-gray-500 font-bold uppercase tracking-[0.3em]">State Status</div>
+                <div class="flex items-center gap-2">
+                    <div class="status-pulse"></div>
+                    <span class="text-[0.7rem] text-red-500 font-black uppercase">Extra-Jurisdictional Authority</span>
+                </div>
+            </div>
+
+            <div id="audioToggle" class="audio-toggle ml-4 hidden lg:flex" onclick="toggleAnthem()">
+                <div class="equalizer">
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                    <div class="eq-bar"></div>
+                </div>
+                <div class="flex flex-col leading-none">
+                    <span id="audioLabel" class="text-[0.5rem] text-white font-black uppercase tracking-tighter">The Bastion of Nyx</span>
+                    <span id="audioStatus" class="text-[0.4rem] text-gray-500 font-bold uppercase">System: Standby</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-8 text-[0.65rem] font-bold uppercase tracking-[0.2em] items-center">
+            <button onclick="showPage('main')" id="nav-main" class="nav-link hover:text-red-500 transition-colors">Home</button>
+            <button onclick="showPage('codex')" id="nav-codex" class="nav-link hover:text-red-500 transition-colors">Codex & Command</button>
+            <a href="https://orgmanager.space/" target="_blank" class="nav-link hover:text-red-500 transition-colors">Portal</a>
+            <button onclick="openModal()" class="text-white border border-white/20 px-4 py-1 hover:bg-white hover:text-black transition-all">Enlist</button>
+        </div>
+    </nav>
+
+    <div id="mainPage" class="page-view active">
+        <section class="relative pt-44 pb-20 px-6 min-h-screen flex flex-col items-center justify-center text-center overflow-hidden">
+            <div class="absolute w-[150%] h-[150%] top-[-25%] left-[-25%] bg-[radial-gradient(circle_at_center,_var(--tac-red)_0%,_transparent_40%)] opacity-10"></div>
+            
+            <div class="max-w-5xl mx-auto space-y-10 relative z-10">
+                <div class="inline-flex items-center gap-3 px-4 py-1 border border-white/10 bg-white/5 text-[0.6rem] font-black tracking-[0.4em] uppercase text-white">
+                    <span class="text-red-500">Type:</span> Independent Militarized Power
+                </div>
+                
+                <h1 class="text-7xl md:text-9xl font-black tracking-tighter text-white">
+                    THE <span class="italic text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-500">SOVEREIGN</span> ACCORD
+                </h1>
+
+                <p class="text-gray-400 text-lg md:text-2xl max-w-3xl mx-auto font-light leading-relaxed">
+                    A nomadic, sovereign military force maintaining its own laws, borders, and lethal authority beyond UEE reach.
+                </p>
+
+                <div class="flex flex-col md:flex-row gap-6 justify-center pt-8">
+                    <button onclick="openModal()" class="btn-accord">Declare Allegiance</button>
+                    <button onclick="showPage('codex')" class="px-8 py-4 border border-white/10 text-white uppercase text-xs font-black tracking-widest hover:bg-white/5 transition-all">Review the Laws</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-24 px-6 border-t border-white/5 relative bg-[#05050a]/50">
+            <div class="max-w-5xl mx-auto">
+                <div class="flex items-center gap-4 mb-12">
+                    <div class="h-[1px] flex-grow bg-gradient-to-r from-transparent to-red-500/50"></div>
+                    <h2 class="text-2xl font-black text-white italic tracking-widest uppercase">Intelligence Briefing</h2>
+                    <div class="h-[1px] flex-grow bg-gradient-to-l from-transparent to-red-500/50"></div>
+                </div>
+
+                <div class="video-container rounded-lg overflow-hidden group">
+                    <iframe 
+                        src="https://www.youtube.com/embed/UPkadY_Uv-E?autoplay=0&rel=0&modestbranding=1" 
+                        title="SATO Recruitment Video" 
+                        frameborder="0" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- UPDATED CODEX PAGE -->
+    <div id="codexPage" class="page-view pt-32 pb-20 px-6">
+        <div class="max-w-7xl mx-auto">
+            <!-- Departments Section -->
+            <div class="mb-24">
+                <div class="flex items-end justify-between border-b border-white/10 pb-4 mb-10">
+                    <div>
+                        <h2 class="text-5xl font-black text-white italic uppercase">State Departments</h2>
+                        <p class="text-gray-500 text-xs uppercase tracking-[0.3em] mt-2">Functional Wings of the Sovereign Accord</p>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="dept-card p-6 border-t-4 border-t-red-600"><div class="text-red-500 text-[0.6rem] font-black uppercase mb-2">Secret Service</div><h3 class="text-xl font-black text-white mb-2">Presidential Guard</h3><p class="text-[0.7rem] text-gray-400 leading-relaxed">Elite protection for the High Council. Authorized for absolute enforcement within SATO territory and high-value VIP escort.</p></div>
+                    <div class="dept-card p-6 border-t-4 border-t-red-800"><div class="text-red-700 text-[0.6rem] font-black uppercase mb-2">SATO TAC MP</div><h3 class="text-xl font-black text-white mb-2">Military Police</h3><p class="text-[0.7rem] text-gray-400 leading-relaxed">Ensuring operational discipline and internal law. Tasked with prisoner transport, border security, and protocol enforcement.</p></div>
+                    <div class="dept-card p-6 border-t-4 border-t-indigo-500"><div class="text-indigo-400 text-[0.6rem] font-black uppercase mb-2">SATO Intel</div><h3 class="text-xl font-black text-white mb-2">Intel & Recon</h3><p class="text-[0.7rem] text-gray-400 leading-relaxed">Deep-space reconnaissance and information gathering. The eyes and ears of the fleet, scouting the Iron Corridor.</p></div>
+                    <div class="dept-card p-6 border-t-4 border-t-blue-600"><div class="text-blue-500 text-[0.6rem] font-black uppercase mb-2">SATO Navy</div><h3 class="text-xl font-black text-white mb-2">Fleet Operations</h3><p class="text-[0.7rem] text-gray-400 leading-relaxed">Commanding the Void Sentinels and Capital assets. Specialized in heavy naval dominance and strategic defense.</p></div>
+                    <div class="dept-card p-6 border-t-4 border-t-orange-600"><div class="text-orange-500 text-[0.6rem] font-black uppercase mb-2">Ironclad Griffin</div><h3 class="text-xl font-black text-white mb-2">Marine Corps</h3><p class="text-[0.7rem] text-gray-400 leading-relaxed">Planetary assault and ship boarding specialists. The "Griffin Strike" units represent our primary shock force.</p></div>
+                    <div class="dept-card p-6 border-t-4 border-t-cyan-500"><div class="text-cyan-500 text-[0.6rem] font-black uppercase mb-2">Research & Dev</div><h3 class="text-xl font-black text-white mb-2">Science Division</h3><p class="text-[0.7rem] text-gray-400 leading-relaxed">Developing "Ghost Wire" stealth protocols and industrial optimization. The intelligence engine of the state.</p></div>
+                    <div class="dept-card p-6 border-t-4 border-t-yellow-600"><div class="text-yellow-500 text-[0.6rem] font-black uppercase mb-2">SATO LOG</div><h3 class="text-xl font-black text-white mb-2">Industrial Power</h3><p class="text-[0.7rem] text-gray-400 leading-relaxed">The economic backbone. Fueling, mining, and salvage operations that sustain our military reach.</p></div>
+                </div>
+            </div>
+
+            <!-- Codex Section -->
+            <div class="pt-10 border-t border-white/10">
+                <div class="text-center mb-16">
+                    <h2 class="text-5xl font-black text-white italic tracking-widest">THE SOVEREIGN CODEX</h2>
+                    <p class="text-red-500 text-[0.7rem] uppercase tracking-[0.4em] mt-4 font-bold">Authorized Protocol // 2854 Edition</p>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div class="codex-card"><h3 class="text-red-500 font-black mb-4 uppercase tracking-widest">I. Governance & Command</h3>
+                        <div class="space-y-3 text-xs text-gray-400 font-mono">
+                            <p><strong class="text-white">Art 1.1 Absolute Authority:</strong> Command authority lies with the President and CO during Ops.</p>
+                            <p><strong class="text-white">Art 1.2 Pulse Mandate:</strong> 30-day activity logs required for rank maintenance.</p>
+                            <p><strong class="text-white">Art 1.3 Primary Directive:</strong> Leadership requires SATO to be set as the Primary Organization.</p>
+                        </div>
+                    </div>
+                    <div class="codex-card"><h3 class="text-yellow-500 font-black mb-4 uppercase tracking-widest">III. Economics & Assets</h3>
+                        <div class="grid grid-cols-3 gap-2 mb-4">
+                            <div class="bg-white/5 p-2 text-center text-[0.6rem]">10%<br>CITIZEN</div>
+                            <div class="bg-white/5 p-2 text-center text-[0.6rem]">15%<br>PARTNER</div>
+                            <div class="bg-white/5 p-2 text-center text-[0.6rem]">25%<br>GOV</div>
+                        </div>
+                        <div class="space-y-3 text-xs text-gray-400 font-mono">
+                            <p><strong class="text-white">Art 3.2 State Requisition:</strong> Capital ships may be commanded by the State during Red Alert.</p>
+                            <p><strong class="text-white">Art 3.3 Industrial Yield:</strong> Mining/Salvage must yield to Military refueling in combat.</p>
+                        </div>
+                    </div>
+                    <div class="codex-card"><h3 class="text-blue-500 font-black mb-4 uppercase tracking-widest">II/IV. Void Laws & Security</h3>
+                        <div class="space-y-3 text-xs text-gray-400 font-mono">
+                            <p><strong class="text-white">Art 2.1 The 5KM Buffer:</strong> Unauthorized approach to Cap Ships is a hostile act.</p>
+                            <p><strong class="text-white">Art 2.2 White-Cross:</strong> Medical craft are neutral; attacks are Tier 1 War Crimes.</p>
+                            <p><strong class="text-white">Code 4.1 Dark Void:</strong> UI masking required for all streams during official Ops.</p>
+                            <p><strong class="text-white">Code 4.2 High Treason:</strong> Leaking fleet intel is grounds for permanent exile.</p>
+                        </div>
+                    </div>
+                    <div class="codex-card"><h3 class="text-purple-500 font-black mb-4 uppercase tracking-widest">VI. Frontier & Expansion</h3>
+                        <div class="space-y-3 text-xs text-gray-400 font-mono">
+                            <p><strong class="text-white">Art 6.1 Keeger Sovereignty:</strong> SATO claims the Keeger Belt; all mining there is taxed.</p>
+                            <p><strong class="text-white">Art 6.3 Pioneer Clause:</strong> Outpost placement must be approved by High Council.</p>
+                            <p><strong class="text-white">Art 6.4 Salvage Sanction:</strong> Only SATO-tagged ships may salvage in SATO battle sites.</p>
+                        </div>
+                    </div>
+                    <div class="codex-card md:col-span-2"><h3 class="text-green-500 font-black mb-4 uppercase tracking-widest">V. Civic & Moral Conduct</h3>
+                        <div class="grid md:grid-cols-2 gap-4 text-xs text-gray-400 font-mono">
+                            <p><strong class="text-white">Art 5.1:</strong> Real-world commitments always supersede game tasks.</p>
+                            <p><strong class="text-white">Art 5.2 Transit:</strong> Absences over 14 days require a "Deep Space Transit" notice.</p>
+                            <p><strong class="text-white">Art 5.3 Zero-Tolerance:</strong> Discrimination results in immediate exile.</p>
+                            <p><strong class="text-white">Art 5.4 Uniform:</strong> SATO gear is required for formal State functions.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Terminal sequence logic
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('terminal-loader');
+            const asciiContainer = document.querySelector('.ascii-art');
+            const loaderText = document.getElementById('loader-text');
+            
+            // Extract lines and clear container for animation
+            const lines = asciiContainer.innerHTML.trim().split('\n');
+            asciiContainer.innerHTML = '';
+            
+            let i = 0;
+            const typeArt = () => {
+                if (i < lines.length) {
+                    asciiContainer.innerHTML += lines[i] + '\n';
+                    i++;
+                    setTimeout(typeArt, 80);
+                } else {
+                    // Once art is done, fade out loader
+                    setTimeout(() => {
+                        loader.style.opacity = '0';
+                        setTimeout(() => loader.style.display = 'none', 800);
+                    }, 1000);
+                }
+            };
+
+            // Start typing
+            setTimeout(typeArt, 500);
+        });
+
+        const audio = document.getElementById('anthem-player');
+        const toggle = document.getElementById('audioToggle');
+        const statusText = document.getElementById('audioStatus');
+        let isPlaying = false;
+
+        function toggleAnthem() {
+            if (!isPlaying) {
+                audio.play().then(() => {
+                    toggle.classList.add('playing');
+                    statusText.innerText = "System: Active";
+                    isPlaying = true;
+                }).catch(e => {
+                    statusText.innerText = "Error: System Locked";
+                });
+            } else {
+                audio.pause();
+                toggle.classList.remove('playing');
+                statusText.innerText = "System: Standby";
+                isPlaying = false;
+            }
+        }
+
+        function showPage(pageId) {
+            document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('text-red-500'));
+            if(pageId === 'main') {
+                document.getElementById('mainPage').classList.add('active');
+                document.getElementById('nav-main').classList.add('text-red-500');
+            } else if(pageId === 'codex') {
+                document.getElementById('codexPage').classList.add('active');
+                document.getElementById('nav-codex').classList.add('text-red-500');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        const modal = document.getElementById('joinModal');
+        function openModal() { modal.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+        function closeModal() { modal.style.display = 'none'; document.body.style.overflow = 'auto'; }
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+        document.addEventListener('DOMContentLoaded', () => { document.getElementById('nav-main').classList.add('text-red-500'); });
+    </script>
+</body>
+</html>
