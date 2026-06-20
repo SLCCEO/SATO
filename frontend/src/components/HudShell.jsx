@@ -14,6 +14,8 @@ const NAV = [
     { to: "/archives", label: "08 // ARCHIVES", short: "ARCHIVES" },
 ];
 
+const ADMIN_NAV = { to: "/admin", label: "09 // ADMIN", short: "ADMIN" };
+
 function useClock() {
     const [t, setT] = useState(new Date());
     useEffect(() => {
@@ -29,6 +31,7 @@ const HudShell = ({ children }) => {
     const clock = useClock();
     const stardate = `2854.${String(clock.getUTCMonth() + 1).padStart(2, "0")}.${String(clock.getUTCDate()).padStart(2, "0")}`;
     const utc = clock.toISOString().substring(11, 19);
+    const nav = (user?.clearance_level >= 5) ? [...NAV, ADMIN_NAV] : NAV;
 
     return (
         <div className="scanlines min-h-screen text-white">
@@ -89,7 +92,7 @@ const HudShell = ({ children }) => {
                 <nav className="border-t border-red-600/30 bg-black/80">
                     <div className="px-2 md:px-6 overflow-x-auto">
                         <ul className="flex items-stretch gap-0 min-w-max">
-                            {NAV.map((n) => {
+                            {nav.map((n) => {
                                 const active = loc.pathname === n.to;
                                 return (
                                     <li key={n.to}>

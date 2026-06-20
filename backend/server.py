@@ -131,16 +131,43 @@ CurrentUser = Annotated[Optional[CodexUser], Depends(get_current_user)]
 
 
 def rank_from_roles(roles: List[str]) -> tuple[str, int]:
-    """Map Discord role names to SATO ranks + clearance."""
-    role_lower = [r.lower() for r in roles]
-    if any("president" in r or "high council" in r for r in role_lower):
-        return ("HIGH COUNCIL", 5)
-    if any("admiral" in r or "command" in r for r in role_lower):
-        return ("FLEET COMMAND", 4)
-    if any("officer" in r or "lieutenant" in r or "captain" in r for r in role_lower):
-        return ("OFFICER", 3)
-    if any("marine" in r or "soldier" in r or "operator" in r for r in role_lower):
-        return ("OPERATOR", 2)
+    """Map exact SATO Discord role names to rank label + clearance.
+    Order in RANK_HIERARCHY matters: highest clearance first wins.
+    """
+    RANK_HIERARCHY = [
+        # CLR 5 :: SOVEREIGN — order matters! more-specific names first
+        ("vice president of sato",    "VICE PRESIDENT", 5),
+        ("president of sato",         "PRESIDENT", 5),
+        ("grand marshal",             "GRAND MARSHAL", 5),
+        # CLR 4 :: HIGH COMMAND
+        ("chief of naval operations", "CHIEF OF NAVAL OPS", 4),
+        ("chief technical officer",   "CHIEF TECHNICAL OFFICER", 4),
+        ("director of intelligence",  "DIRECTOR OF INTELLIGENCE", 4),
+        ("high admiral of logistics", "HIGH ADMIRAL OF LOGISTICS", 4),
+        ("trade minister",            "TRADE MINISTER", 4),
+        ("brigadier",                 "BRIGADIER", 4),
+        # CLR 3 :: OFFICER CORPS
+        ("commander",                 "COMMANDER", 3),
+        ("recruitment officer",       "RECRUITMENT OFFICER", 3),
+        ("lieutenant",                "LIEUTENANT", 3),
+        ("operations officer",        "OPERATIONS OFFICER", 3),
+        ("intelligence officer",      "INTELLIGENCE OFFICER", 3),
+        # CLR 2 :: ENLISTED
+        ("marine",                    "MARINE", 2),
+        ("crewman",                   "CREWMAN", 2),
+        ("medical personnel",         "MEDICAL PERSONNEL", 2),
+        ("vanguard",                  "VANGUARD", 2),
+        # CLR 1 :: CADET / CIVILIAN
+        ("cadet",                     "CADET", 1),
+        ("citizen of sato",           "CITIZEN", 1),
+        ("merchant pilot",            "MERCHANT PILOT", 1),
+        ("foreign consultant",        "FOREIGN CONSULTANT", 1),
+    ]
+    role_lower = [r.lower().strip() for r in roles]
+    for match, label, clearance in RANK_HIERARCHY:
+        for r in role_lower:
+            if r == match or match in r:
+                return (label, clearance)
     return ("RECRUIT", 1)
 
 

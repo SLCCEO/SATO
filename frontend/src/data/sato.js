@@ -8,14 +8,15 @@ export const DEPARTMENTS = [
         name: "Presidential Guard",
         code: "Secret Service",
         cipher: "DEPT-01",
+        logo_file: "SATOPG512.png",
         desc: "Elite protection for the High Council. Authorized for absolute enforcement within SATO territory and high-value VIP escort.",
-        color: "from-red-900/30 to-black",
     },
     {
         slug: "military-police",
         name: "Military Police",
         code: "SATO TAC MP",
         cipher: "DEPT-02",
+        logo_file: "SATOMP512.png",
         desc: "Ensuring operational discipline and internal law. Tasked with prisoner transport, border security, and protocol enforcement.",
     },
     {
@@ -23,6 +24,7 @@ export const DEPARTMENTS = [
         name: "Intel & Recon",
         code: "SATO Intel",
         cipher: "DEPT-03",
+        logo_file: "SATOINT512.png",
         desc: "Deep-space reconnaissance and information gathering. The eyes and ears of the fleet, scouting the Iron Corridor.",
     },
     {
@@ -30,6 +32,7 @@ export const DEPARTMENTS = [
         name: "Fleet Operations",
         code: "SATO Navy",
         cipher: "DEPT-04",
+        logo_file: "SATOTAC512.png",
         desc: "Commanding the Void Sentinels and Capital assets. Specialized in heavy naval dominance and strategic defense.",
     },
     {
@@ -37,6 +40,7 @@ export const DEPARTMENTS = [
         name: "Marine Corps",
         code: "Ironclad Griffin",
         cipher: "DEPT-05",
+        logo_file: "SATOMC512.png",
         desc: "Planetary assault and ship boarding specialists. The 'Griffin Strike' units represent our primary shock force.",
     },
     {
@@ -44,6 +48,7 @@ export const DEPARTMENTS = [
         name: "Science Division",
         code: "Research & Dev",
         cipher: "DEPT-06",
+        logo_file: "SATORND512.png",
         desc: "Developing 'Ghost Wire' stealth protocols and industrial optimization. The intelligence engine of the state.",
     },
     {
@@ -51,9 +56,14 @@ export const DEPARTMENTS = [
         name: "Industrial Power",
         code: "SATO LOG",
         cipher: "DEPT-07",
+        logo_file: "SATOLOG512.png",
         desc: "The economic backbone. Fueling, mining, and salvage operations that sustain our military reach.",
     },
 ];
+
+// Lookup helper for department logos (set via /admin once you upload PNGs to /app/frontend/public/logos/)
+export const LOGO_BASE = "/logos";
+export const logoUrl = (file) => file ? `${LOGO_BASE}/${file}` : null;
 
 export const CODEX_ARTICLES = [
     {
@@ -106,16 +116,22 @@ export const CODEX_ARTICLES = [
 ];
 
 export const GOVERNMENT = [
-    { title: "Head of State", rank: "PRESIDENT", occupant: "Jeremiah", clearance: 5, dept: "High Council",
-      mandate: "Absolute command authority. Issues sovereign decrees. Final arbiter of war and peace." },
-    { title: "Fleet Admiral", rank: "ADMIRAL", occupant: "Vex Halloran", clearance: 4, dept: "Fleet Operations",
-      mandate: "Commands SATO Navy and Capital fleet. Executes Red Alert protocols." },
-    { title: "Marshal of the Marines", rank: "MARSHAL", occupant: "Mara Tully", clearance: 4, dept: "Marine Corps",
-      mandate: "Oversees Griffin Strike units and planetary deployment." },
-    { title: "Chief of Intel", rank: "DIRECTOR", occupant: "Ka'el", clearance: 4, dept: "Intel & Recon",
-      mandate: "Deep-space recon. Custodian of Ghost Wire protocols." },
-    { title: "Sovereign Magistrate", rank: "MAGISTRATE", occupant: "Sera Voss", clearance: 4, dept: "Judiciary",
-      mandate: "Tribunal authority. Sentences and exile decrees." },
-    { title: "Lord Industrialist", rank: "MINISTER", occupant: "K. Brennan", clearance: 3, dept: "Industrial Power",
-      mandate: "Logistics, salvage, mining, refueling lifelines." },
+    { title: "President of SATO",            rank: "PRESIDENT",                clearance: 5, branch: "Executive Cabinet",
+      mandate: "Sovereign authority. Issues decrees. Final arbiter of war, peace, and the Codex." },
+    { title: "Vice President of SATO",       rank: "VICE PRESIDENT",           clearance: 5, branch: "Executive Cabinet",
+      mandate: "Acting authority in the President's absence. Chair of the Sovereign Council." },
+    { title: "Chief of Naval Operations",    rank: "CNO",                      clearance: 4, branch: "Executive Cabinet",
+      mandate: "Commands SATO Navy. Capital fleet doctrine, fleet-wide ROE, Red Alert protocols." },
+    { title: "Chief Technical Officer",      rank: "CTO",                      clearance: 4, branch: "Executive Cabinet",
+      mandate: "Ghost Wire stealth doctrine. Research & Development division oversight." },
+    { title: "Director of Intelligence",     rank: "DIRECTOR",                 clearance: 4, branch: "Executive Cabinet",
+      mandate: "Deep-space recon. Custodian of the Iron Corridor intelligence network." },
+    { title: "High Admiral of Logistics",    rank: "HIGH ADMIRAL",             clearance: 4, branch: "Executive Cabinet",
+      mandate: "Logistics, refueling, salvage, mining yield, supply convoy security." },
+    { title: "Trade Minister",               rank: "MINISTER",                 clearance: 4, branch: "Executive Cabinet",
+      mandate: "External economic accords. Sovereign tax tier enforcement (10/15/25%)." },
+    { title: "Grand Marshal",                rank: "GRAND MARSHAL",            clearance: 5, branch: "Marine Corps",
+      mandate: "Supreme authority of the Marine Corps. Commands Griffin Strike planetary assault units." },
+    { title: "Brigadier",                    rank: "BRIGADIER",                clearance: 4, branch: "Marine Corps",
+      mandate: "Field command of marine task forces. Boarding & ground sector control." },
 ];

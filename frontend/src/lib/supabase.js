@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { rankFromRoles as _rankFromRoles } from "../data/ranks";
 
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = process.env.REACT_APP_SUPABASE_PUBLISHABLE_KEY;
@@ -19,13 +20,15 @@ export const supabase = SUPABASE_CONFIGURED
       })
     : null;
 
+export const rankFromRoles = _rankFromRoles;
+
 // Map a Supabase Discord-auth user into a SATO CodexUser shape
 export const toCodexUser = (sbUser) => {
     if (!sbUser) return null;
     const meta = sbUser.user_metadata || {};
     const appMeta = sbUser.app_metadata || {};
     const roles = appMeta.discord_roles || meta.discord_roles || [];
-    const { rank, clearance } = rankFromRoles(roles);
+    const { rank, clearance, branch } = rankFromRoles(roles);
     return {
         id: sbUser.id,
         discord_id: meta.provider_id || meta.sub || null,
@@ -36,23 +39,7 @@ export const toCodexUser = (sbUser) => {
         roles,
         sato_rank: rank,
         clearance_level: clearance,
+        branch,
         last_seen: new Date().toISOString(),
     };
-};
-
-export const rankFromRoles = (roles = []) => {
-    const lower = roles.map((r) => String(r).toLowerCase());
-    if (lower.some((r) => r.includes("president") || r.includes("high council"))) {
-        return { rank: "HIGH COUNCIL", clearance: 5 };
-    }
-    if (lower.some((r) => r.includes("admiral") || r.includes("command"))) {
-        return { rank: "FLEET COMMAND", clearance: 4 };
-    }
-    if (lower.some((r) => r.includes("officer") || r.includes("lieutenant") || r.includes("captain"))) {
-        return { rank: "OFFICER", clearance: 3 };
-    }
-    if (lower.some((r) => r.includes("marine") || r.includes("operator") || r.includes("soldier"))) {
-        return { rank: "OPERATOR", clearance: 2 };
-    }
-    return { rank: "RECRUIT", clearance: 1 };
 };

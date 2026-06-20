@@ -10,7 +10,9 @@ import Personnel from "@/pages/Personnel";
 import Codex from "@/pages/Codex";
 import Judiciary from "@/pages/Judiciary";
 import Archives from "@/pages/Archives";
+import Admin from "@/pages/Admin";
 import AuthCallback from "@/pages/AuthCallback";
+import { Toaster } from "sonner";
 
 function App() {
     return (
@@ -27,7 +29,9 @@ function App() {
                         <Route path="/codex" element={<HudShell><Codex /></HudShell>} />
                         <Route path="/judiciary" element={<HudShell><Judiciary /></HudShell>} />
                         <Route path="/archives" element={<HudShell><Archives /></HudShell>} />
+                        <Route path="/admin" element={<HudShell><Admin /></HudShell>} />
                     </Routes>
+                    <Toaster position="bottom-right" theme="dark" toastOptions={{ style: { background: "#0c0c0e", border: "1px solid rgba(220,20,60,0.5)", color: "#fff" } }} />
                 </AuthProvider>
             </BrowserRouter>
         </div>
