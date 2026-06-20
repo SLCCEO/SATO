@@ -28,12 +28,12 @@ export const DEPARTMENTS = [
         desc: "Deep-space reconnaissance and information gathering. The eyes and ears of the fleet, scouting the Iron Corridor.",
     },
     {
-        slug: "fleet-operations",
-        name: "Fleet Operations",
-        code: "SATO Navy",
+        slug: "tactical-operations",
+        name: "Tactical Operations",
+        code: "SATO TAC",
         cipher: "DEPT-04",
         logo_file: "SATOTAC512.png",
-        desc: "Commanding the Void Sentinels and Capital assets. Specialized in heavy naval dominance and strategic defense.",
+        desc: "Commanding the Void Sentinels, Capital assets, and theater-wide engagements. Specialized in fleet dominance and strategic defense.",
     },
     {
         slug: "marine-corps",

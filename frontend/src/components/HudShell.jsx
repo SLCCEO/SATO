@@ -52,8 +52,15 @@ const HudShell = ({ children }) => {
                 </div>
                 <div className="flex items-center justify-between px-4 md:px-8 py-3 border-t border-red-600/30">
                     <Link to="/" className="flex items-center gap-3" data-testid="logo-home">
-                        <div className="relative w-10 h-10 chamfer-sm hud-panel-strong flex items-center justify-center">
-                            <Shield className="w-5 h-5 text-red-500" strokeWidth={2.5} />
+                        <div className="relative w-12 h-12 chamfer-sm hud-panel-strong flex items-center justify-center overflow-hidden">
+                            <img
+                                src="/logos/SATO512.png"
+                                alt="SATO"
+                                onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.nextSibling.style.display = "block"; }}
+                                className="w-full h-full object-contain p-0.5"
+                                style={{ filter: "drop-shadow(0 0 8px rgba(220,20,60,0.6))" }}
+                            />
+                            <Shield className="w-5 h-5 text-red-500" strokeWidth={2.5} style={{ display: "none" }} />
                         </div>
                         <div className="leading-none">
                             <div className="font-rajdhani text-xl font-bold tracking-widest text-white">S A T O</div>
