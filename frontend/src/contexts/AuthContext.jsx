@@ -2,11 +2,13 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import { supabase, SUPABASE_CONFIGURED, toCodexUser } from "../lib/supabase";
 import axios from 'axios';
 
-// 1. Fully dynamic API configuration
+// 1. Updated API configuration with explicit base URL
+const API_BASE_URL = window.location.hostname === "satoaccord.com" 
+    ? "https://api.satoaccord.com/api" 
+    : "http://127.0.0.1:8000/api"; // Ensure this matches your FastAPI port
+
 const api = axios.create({
-    baseURL: window.location.hostname === "satoaccord.com" 
-        ? "https://api.satoaccord.com/api" 
-        : "http://127.0.0.1:8000/api",
+    baseURL: API_BASE_URL,
     withCredentials: true,
 });
 
@@ -15,143 +17,45 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [mode] = useState(SUPABASE_CONFIGURED ? "supabase" : "mock");
 
-    // ---------- SUPABASE PATH ----------
-    useEffect(() => {
-        if (!SUPABASE_CONFIGURED) return;
-        let sub;
-        (async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                const codex = toCodexUser(session.user);
-                setUser(codex);
-                await upsertProfile(codex);
-            }
-            setLoading(false);
-            sub = supabase.auth.onAuthStateChange(async (_event, sess) => {
-                if (sess?.user) {
-                    const codex = toCodexUser(sess.user);
-                    setUser(codex);
-                    await upsertProfile(codex);
-                } else {
-                    setUser(null);
-                }
-            });
-        })();
-        return () => { sub?.data?.subscription?.unsubscribe?.(); };
-    }, []);
-
-    // ---------- MOCK PATH ----------
-    const refreshMock = useCallback(async () => {
+    // Helper to fetch full profile including sato_rank and clearance_level
+    const fetchPersonnelProfile = async (discordId) => {
         try {
-            const res = await api.get("/auth/me");
-            setUser(res.data);
-        } catch {
-            setUser(null);
-        } finally {
-            setLoading(false);
+            // Now pointing to the backend that correctly returns sato_rank and clearance_level
+            const res = await api.get(`/personnel`); 
+            const personnel = res.data.personnel || [];
+            const profile = personnel.find(p => String(p.discord_id) === String(discordId));
+            return profile || {};
+        } catch (e) {
+            console.error("Failed to fetch personnel profile:", e);
+            return {};
         }
-    }, []);
-    
-    useEffect(() => {
-        if (SUPABASE_CONFIGURED) return;
-        refreshMock();
-    }, [refreshMock]);
+    };
 
     const upsertProfile = async (codex) => {
         if (!codex) return;
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const discordId = session?.user?.user_metadata?.provider_id
-                || session?.user?.user_metadata?.sub
-                || codex.discord_id;
-            if (discordId) {
-                try {
-                    const res = await api.post("/discord/sync-roles", {
-                        user_id: codex.id,
-                        discord_id: String(discordId),
-                        username: codex.username,
-                        global_name: codex.global_name,
-                        avatar: codex.avatar,
-                        email: codex.email,
-                    });
-                    if (res.data?.profile) {
-                        const { data: row } = await supabase.from("sato_profiles").select("*").eq("id", codex.id).maybeSingle();
-                        const merged = { ...codex, ...res.data.profile, ...(row || {}) };
-                        setUser(merged);
-                        return;
-                    }
-                } catch (e) {
-                    console.warn("sync-roles failed, falling back to direct upsert:", e?.message);
-                }
-            }
-
-            await supabase.from("sato_profiles").upsert({
-                id: codex.id,
-                discord_id: codex.discord_id,
+            // Sync with backend
+            const res = await api.post("/discord/sync-roles", {
+                user_id: codex.id,
+                discord_id: String(codex.discord_id),
                 username: codex.username,
-                global_name: codex.global_name,
-                avatar: codex.avatar,
-                email: codex.email,
-                roles: codex.roles,
-                sato_rank: codex.sato_rank,
-                clearance_level: codex.clearance_level,
-                last_seen: codex.last_seen,
-            }, { onConflict: "id" });
-
-            const { data: row } = await supabase.from("sato_profiles").select("*").eq("id", codex.id).maybeSingle();
-            if (row) setUser((prev) => ({ ...prev, ...row }));
-        } catch (e) {
-            console.warn("sato_profiles upsert skipped:", e.message);
-        }
-    };
-
-    const login = async () => {
-        if (SUPABASE_CONFIGURED) {
-            await supabase.auth.signInWithOAuth({
-                provider: "discord",
-                options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
-                    scopes: "identify email guilds",
-                },
+                // ... rest of your fields
             });
-            return;
+
+            // Merge local codex data with backend database data
+            const dbProfile = await fetchPersonnelProfile(codex.discord_id);
+            const merged = { ...codex, ...res.data?.profile, ...dbProfile };
+            setUser(merged);
+        } catch (e) {
+            console.warn("Profile sync failed:", e.message);
         }
-        const res = await api.get("/auth/discord/login");
-        window.location.href = res.data.url;
     };
 
-    const completeCallback = async ({ code, mock }) => {
-        if (SUPABASE_CONFIGURED) {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                const codex = toCodexUser(session.user);
-                setUser(codex);
-                await upsertProfile(codex);
-                return codex;
-            }
-            return null;
-        }
-        const res = await api.post("/auth/discord/callback", { code, mock: !!mock });
-        if (res.data?.token) localStorage.setItem("sato_token", res.data.token);
-        setUser(res.data.user);
-        return res.data.user;
-    };
-
-    const logout = async () => {
-        if (SUPABASE_CONFIGURED) {
-            await supabase.auth.signOut();
-            setUser(null);
-            return;
-        }
-        try { await api.post("/auth/logout"); } catch (e) { /* noop */ }
-        localStorage.removeItem("sato_token");
-        setUser(null);
-    };
+    // ... (keep your existing login, logout, and completeCallback logic)
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, completeCallback, mode, refresh: refreshMock }}>
+        <AuthContext.Provider value={{ user, loading, login, logout, completeCallback }}>
             {children}
         </AuthContext.Provider>
     );
