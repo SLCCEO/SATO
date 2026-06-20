@@ -2,7 +2,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 
 const Admin = () => {
-    const { user, loading } = useAuth();
+    // Combine them into one single line:
+    const { user, login, loading } = useAuth(); 
     
     // Replace with your actual Discord ID
     const ADMIN_ID = "123456789012345678"; 
