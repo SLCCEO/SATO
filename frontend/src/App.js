@@ -20,6 +20,7 @@ function App() {
             <BrowserRouter>
                 <AuthProvider>
                     <Routes>
+                        <Route path="*" element={<HudShell><Home /></HudShell>} />
                         <Route path="/auth/callback" element={<HudShell><AuthCallback /></HudShell>} />
                         <Route path="/" element={<HudShell><Home /></HudShell>} />
                         <Route path="/government" element={<HudShell><Government /></HudShell>} />
