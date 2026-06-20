@@ -2,6 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
+// In your AuthContext.jsx or wherever the axios call lives:
+const API_URL = "http://127.0.0.1:8000"; // Point to your FastAPI port
+
+const response = await axios.get(`${API_URL}/api/auth/me`, {
+    withCredentials: true // Essential for cookies to be sent
+});
+
 const AuthCallback = () => {
     const [params] = useSearchParams();
     const { completeCallback } = useAuth();
